@@ -6,11 +6,13 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="tetris-wrapper">
-    <div class="game-panel">
+  <div class="wrapper">
+    <div class="panel">
       <h1 class="title">TETRIS</h1>
+
       <div id="board" class="board"></div>
-      <div class="info-bar">
+
+      <div class="info">
         <div class="info-block">
           <span class="label">Score</span>
           <span id="score">0</span>
@@ -24,40 +26,28 @@
           <span id="level">1</span>
         </div>
       </div>
+
       <div class="controls">
         <button id="startBtn">Start</button>
         <button id="pauseBtn">Pause</button>
         <button id="resetBtn">Reset</button>
       </div>
+
       <div class="hint">
         <p>Controls:</p>
-        <p>← → : Move | ↓ : Soft drop | ↑ / X : Rotate | Z : Rotate CCW | Space : Hard drop</p>
+        <p>← → move | ↓ soft drop | ↑ rotate | Space hard drop</p>
       </div>
+
       <div id="gameOver" class="game-over hidden">
         <div class="game-over-content">
           <h2>Game Over</h2>
-          <p>Your score: <span id="finalScore">0</span></p>
+          <p>Score: <span id="finalScore">0</span></p>
           <button id="restartBtn">Play Again</button>
         </div>
       </div>
     </div>
-
-    <div class="side-panel">
-      <div class="next-piece-panel">
-        <h2>Next</h2>
-        <div id="nextBoard" class="next-board"></div>
-      </div>
-      <div class="help-panel">
-        <h2>Tips</h2>
-        <ul>
-          <li>Stack flat surfaces.</li>
-          <li>Use I-piece for Tetris (4-line clear).</li>
-          <li>Keep a clean well on one side.</li>
-        </ul>
-      </div>
-    </div>
   </div>
 
-  <script src="script2.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
