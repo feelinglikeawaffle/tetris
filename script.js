@@ -17,6 +17,7 @@ const restartBtn = document.getElementById("restartBtn");
 // --- Game state ---
 let board = [];
 let currentPiece = null;
+let ghostPiece = null;
 let nextDropTime = 0;
 let dropInterval = 800;
 let score = 0;
@@ -25,6 +26,7 @@ let level = 1;
 let running = false;
 let paused = false;
 let frameId = null;
+let ghostPulseToggle = false;
 
 // --- Tetromino definitions ---
 const TETROMINOES = {
@@ -185,8 +187,7 @@ const T_KEYS = Object.keys(TETROMINOES);
 function createBoard() {
   board = [];
   for (let r = 0; r < ROWS; r++) {
-    const row = new Array(COLS).fill(null);
-    board.push(row);
+    board.push(new Array(COLS).fill(null));
   }
 }
 
@@ -211,6 +212,8 @@ function spawnPiece() {
     colorClass: def.colorClass
   };
 
+  updateGhost();
+
   if (!isValidPosition(currentPiece, 0, 0, currentPiece.shape)) {
     endGame();
   }
@@ -231,20 +234,80 @@ function isValidPosition(piece, dx, dy, newShape) {
   return true;
 }
 
+// --- Ghost / hologram ---
+function updateGhost() {
+  if (!currentPiece) {
+    ghostPiece = null;
+    return;
+  }
+  const ghost = {
+    type: currentPiece.type,
+    x: currentPiece.x,
+    y: currentPiece.y,
+    rotationIndex: currentPiece.rotationIndex,
+    shape: currentPiece.shape,
+    colorClass: currentPiece.colorClass
+  };
+
+  let dy = 0;
+  while (isValidPosition(ghost, 0, dy + 1, ghost.shape)) {
+    dy++;
+  }
+  ghost.y += dy;
+  ghostPiece = ghost;
+  ghostPulseToggle = !ghostPulseToggle;
+}
+
+// --- Rendering ---
 function draw() {
   const cells = boardEl.children;
+
+  // Clear base
+  for (let i = 0; i < cells.length; i++) {
+    cells[i].className = "cell";
+  }
+
+  // Draw board
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const idx = r * COLS + c;
       const cell = cells[idx];
-      cell.className = "cell";
       const val = board[r][c];
       if (val) {
         cell.classList.add("filled", val.colorClass);
+        if (val.landed) {
+          cell.classList.add("landed");
+          // remove landed flag so animation doesn't repeat forever
+          delete val.landed;
+        }
+        if (val.clearing) {
+          cell.classList.add("clearing");
+        }
       }
     }
   }
 
+  // Draw ghost
+  if (ghostPiece) {
+    const { shape, x, y } = ghostPiece;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        if (!shape[r][c]) continue;
+        const br = y + r;
+        const bc = x + c;
+        if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS) {
+          const idx = br * COLS + bc;
+          const cell = cells[idx];
+          cell.classList.add("ghost");
+          if (ghostPulseToggle) {
+            cell.classList.add("ghost-pulse");
+          }
+        }
+      }
+    }
+  }
+
+  // Draw current piece
   if (currentPiece) {
     const { shape, x, y, colorClass } = currentPiece;
     for (let r = 0; r < 4; r++) {
@@ -262,41 +325,73 @@ function draw() {
   }
 }
 
+// --- Locking / line clear ---
 function lockPiece() {
   const { shape, x, y, colorClass } = currentPiece;
+  const landedCells = [];
+
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
       if (!shape[r][c]) continue;
       const br = y + r;
       const bc = x + c;
       if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS) {
-        board[br][bc] = { colorClass };
+        board[br][bc] = { colorClass, landed: true };
+        landedCells.push({ r: br, c: bc });
       }
     }
   }
-  clearLines();
-  spawnPiece();
+
+  updateGhost();
   draw();
+  clearLines(() => {
+    spawnPiece();
+    draw();
+  });
 }
 
-function clearLines() {
-  let cleared = 0;
-  for (let r = ROWS - 1; r >= 0; r--) {
+function clearLines(callback) {
+  let rowsToClear = [];
+  for (let r = 0; r < ROWS; r++) {
     if (board[r].every(cell => cell !== null)) {
-      board.splice(r, 1);
-      board.unshift(new Array(COLS).fill(null));
-      cleared++;
-      r++;
+      rowsToClear.push(r);
     }
   }
-  if (cleared > 0) {
+
+  if (rowsToClear.length === 0) {
+    callback();
+    return;
+  }
+
+  // Mark cells as clearing for animation
+  rowsToClear.forEach(r => {
+    for (let c = 0; c < COLS; c++) {
+      if (board[r][c]) {
+        board[r][c].clearing = true;
+      }
+    }
+  });
+
+  draw();
+
+  setTimeout(() => {
+    // Actually remove rows
+    rowsToClear.sort((a, b) => a - b);
+    for (let i = 0; i < rowsToClear.length; i++) {
+      const rowIndex = rowsToClear[i];
+      board.splice(rowIndex, 1);
+      board.unshift(new Array(COLS).fill(null));
+    }
+
     const lineScores = [0, 40, 100, 300, 1200];
-    score += lineScores[cleared] * level;
-    lines += cleared;
+    score += lineScores[rowsToClear.length] * level;
+    lines += rowsToClear.length;
     level = 1 + Math.floor(lines / 10);
     dropInterval = Math.max(120, 800 - (level - 1) * 60);
     updateInfo();
-  }
+
+    callback();
+  }, 220); // match lineClear animation duration
 }
 
 function updateInfo() {
@@ -305,13 +400,16 @@ function updateInfo() {
   levelEl.textContent = level;
 }
 
+// --- Movement / rotation ---
 function move(dx, dy) {
   if (!currentPiece) return;
   if (isValidPosition(currentPiece, dx, dy)) {
     currentPiece.x += dx;
     currentPiece.y += dy;
+    updateGhost();
     draw();
   } else if (dy === 1) {
+    // landed
     lockPiece();
   }
 }
@@ -327,18 +425,20 @@ function rotate() {
   if (isValidPosition(currentPiece, 0, 0, newShape)) {
     currentPiece.rotationIndex = newIndex;
     currentPiece.shape = newShape;
-    draw();
   } else if (isValidPosition(currentPiece, -1, 0, newShape)) {
     currentPiece.x -= 1;
     currentPiece.rotationIndex = newIndex;
     currentPiece.shape = newShape;
-    draw();
   } else if (isValidPosition(currentPiece, 1, 0, newShape)) {
     currentPiece.x += 1;
     currentPiece.rotationIndex = newIndex;
     currentPiece.shape = newShape;
-    draw();
+  } else {
+    return;
   }
+
+  updateGhost();
+  draw();
 }
 
 function hardDrop() {
@@ -348,6 +448,7 @@ function hardDrop() {
     dist++;
   }
   currentPiece.y += dist;
+  updateGhost();
   draw();
   lockPiece();
 }
