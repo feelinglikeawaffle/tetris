@@ -6,7 +6,7 @@
 }
 
 body {
-  background: radial-gradient(circle at top, #222 0, #050505 55%, #000 100%);
+  background: radial-gradient(circle at top, #1b1b1f 0, #050509 55%, #000 100%);
   color: #f5f5f5;
   min-height: 100vh;
   display: flex;
@@ -15,10 +15,12 @@ body {
 }
 
 .wrapper {
-  background: rgba(10, 10, 10, 0.9);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  background: rgba(8, 8, 12, 0.95);
+  border-radius: 18px;
+  padding: 24px 28px 28px;
+  box-shadow:
+    0 0 40px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .panel {
@@ -29,62 +31,141 @@ body {
 }
 
 .title {
-  letter-spacing: 0.2em;
-  margin-bottom: 12px;
-  text-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
+  letter-spacing: 0.22em;
+  margin-bottom: 14px;
+  text-shadow:
+    0 0 14px rgba(0, 255, 255, 0.7),
+    0 0 30px rgba(0, 180, 255, 0.4);
+  font-weight: 700;
 }
+
+/* Board */
 
 .board {
   width: 240px;  /* 10 * 24 */
   height: 480px; /* 20 * 24 */
-  background: #111;
-  border: 2px solid #333;
+  background: radial-gradient(circle at top, #15151b 0, #050509 70%);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(20, 1fr);
   gap: 1px;
+  padding: 6px;
+  box-shadow:
+    inset 0 0 18px rgba(0, 0, 0, 0.9),
+    0 0 20px rgba(0, 0, 0, 0.8);
 }
 
 .cell {
   width: 100%;
   height: 100%;
-  background: #111;
+  background: rgba(5, 5, 10, 0.9);
+  border-radius: 4px;
+  transition:
+    transform 90ms cubic-bezier(.17,.67,.83,.67),
+    background-color 120ms ease-out,
+    box-shadow 120ms ease-out,
+    opacity 140ms ease-out;
 }
+
+/* Filled blocks */
 
 .cell.filled {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(0, 0, 0, 0.7);
+  transform: scale(0.98);
 }
 
-/* Tetromino colors */
-.color-I { background: #00f0f0; }
-.color-O { background: #f0f000; }
-.color-T { background: #a000f0; }
-.color-S { background: #00f000; }
-.color-Z { background: #f00000; }
-.color-J { background: #0000f0; }
-.color-L { background: #f0a000; }
+/* Tetromino colors: hybrid neon + premium */
+
+.color-I { background: linear-gradient(135deg, #00f0ff, #00b0ff); }
+.color-O { background: linear-gradient(135deg, #f5f000, #f0c000); }
+.color-T { background: linear-gradient(135deg, #b000ff, #7a3bff); }
+.color-S { background: linear-gradient(135deg, #00f070, #00c060); }
+.color-Z { background: linear-gradient(135deg, #ff3050, #ff0040); }
+.color-J { background: linear-gradient(135deg, #3050ff, #2030ff); }
+.color-L { background: linear-gradient(135deg, #ff9a3b, #ff7a00); }
+
+/* Ghost / hologram */
+
+.cell.ghost {
+  background: transparent;
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(180, 220, 255, 0.35),
+    0 0 10px rgba(0, 200, 255, 0.35);
+  opacity: 0.35;
+  transform: scale(0.96);
+}
+
+/* Slight pulse when ghost updates (applied via class toggle) */
+
+.cell.ghost-pulse {
+  animation: ghostPulse 220ms ease-out;
+}
+
+@keyframes ghostPulse {
+  0%   { opacity: 0.15; transform: scale(0.9); }
+  60%  { opacity: 0.4;  transform: scale(0.98); }
+  100% { opacity: 0.35; transform: scale(0.96); }
+}
+
+/* Landing bounce */
+
+.cell.landed {
+  animation: landedBounce 180ms cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes landedBounce {
+  0%   { transform: translateY(-4px) scale(0.9); box-shadow: 0 0 0 rgba(0,0,0,0); }
+  60%  { transform: translateY(1px) scale(1.02); box-shadow: 0 0 14px rgba(255,255,255,0.25); }
+  100% { transform: translateY(0) scale(0.98); box-shadow: 0 0 10px rgba(0,0,0,0.7); }
+}
+
+/* Line clear animation */
+
+.cell.clearing {
+  animation: lineClear 220ms cubic-bezier(.17,.67,.83,.67) forwards;
+}
+
+@keyframes lineClear {
+  0%   { opacity: 1; transform: scale(0.98); }
+  40%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(0.6); }
+}
+
+/* Info / controls */
 
 .info {
   display: flex;
   justify-content: space-between;
   width: 240px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .info-block {
-  background: #181818;
+  background: radial-gradient(circle at top, #202028 0, #101018 70%);
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: 10px;
   min-width: 70px;
   text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
 }
 
 .label {
   font-size: 11px;
   text-transform: uppercase;
-  color: #aaa;
+  color: #a8acb8;
   display: block;
   margin-bottom: 4px;
+  letter-spacing: 0.08em;
+}
+
+.info-block span:last-child {
+  font-weight: 600;
 }
 
 .controls {
@@ -94,43 +175,58 @@ body {
 }
 
 button {
-  background: #222;
+  background: linear-gradient(135deg, #181820, #101018);
   color: #f5f5f5;
-  border: 1px solid #444;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 14px;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  transition:
+    background 140ms ease-out,
+    transform 80ms cubic-bezier(.17,.67,.83,.67),
+    box-shadow 140ms ease-out,
+    border-color 140ms ease-out;
 }
 
 button:hover {
-  background: #333;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  background: linear-gradient(135deg, #232332, #151520);
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.35),
+    0 0 20px rgba(0, 120, 255, 0.25);
+  border-color: rgba(0, 200, 255, 0.7);
 }
 
 button:active {
-  transform: translateY(1px);
-  box-shadow: none;
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
 }
 
 .hint {
   margin-top: 10px;
   font-size: 11px;
-  color: #bbb;
+  color: #b0b4c0;
   text-align: center;
 }
 
+/* Game over */
+
 .game-over {
   position: absolute;
-  top: 80px;
+  top: 90px;
   left: 50%;
   transform: translateX(-50%);
-  width: 220px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.95);
-  border-radius: 12px;
-  border: 1px solid #444;
+  width: 230px;
+  padding: 16px 14px 14px;
+  background: radial-gradient(circle at top, rgba(20, 20, 30, 0.98), rgba(5, 5, 10, 0.98));
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.9),
+    0 0 20px rgba(0, 200, 255, 0.35);
+  animation: gameOverPop 220ms cubic-bezier(.17,.67,.83,.67);
 }
 
 .game-over.hidden {
@@ -147,4 +243,10 @@ button:active {
 
 .game-over-content p {
   margin-bottom: 12px;
+}
+
+@keyframes gameOverPop {
+  0%   { opacity: 0; transform: translate(-50%, -10px) scale(0.9); }
+  60%  { opacity: 1; transform: translate(-50%, 2px) scale(1.03); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
